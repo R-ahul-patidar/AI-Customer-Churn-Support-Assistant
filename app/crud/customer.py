@@ -112,7 +112,6 @@ def get_churn_rate_by_plan(db: Session) -> list[dict]:
         db.query(
             Customer.plan,
             func.count(Customer.customer_id).label("total"),
-            func.sum(Customer.churn.cast(type_=func.count(Customer.customer_id).__class__)).label("churned"),
         )
         .group_by(Customer.plan)
         .all()
@@ -145,19 +144,23 @@ def get_high_risk_customers(db: Session, limit: int = 50) -> list[Customer]:
     Rule-based high churn-risk customers (no ML required).
     A customer is flagged as high-risk if they meet 2 or more of:
       - support_tickets > 5
-      - satisfaction_score < 5
+      - satisfaction_score < 5.0
       - last_login_days > 30
+    Uses SQLite-compatible approach with sqlalchemy.case for boolean summation.
     This heuristic will be replaced by the ML model in Phase 4.
     """
+    from sqlalchemy import case
+
+    risk_score = (
+        case((Customer.support_tickets > 5, 1), else_=0)
+        + case((Customer.satisfaction_score < 5.0, 1), else_=0)
+        + case((Customer.last_login_days > 30, 1), else_=0)
+    )
+
     return (
         db.query(Customer)
         .filter(Customer.churn == False)  # noqa: E712 — not yet churned but at risk
-        .filter(
-            (Customer.support_tickets > 5).cast(type_=type(1))
-            + (Customer.satisfaction_score < 5.0).cast(type_=type(1))
-            + (Customer.last_login_days > 30).cast(type_=type(1))
-            >= 2
-        )
+        .filter(risk_score >= 2)
         .order_by(Customer.satisfaction_score.asc())
         .limit(limit)
         .all()

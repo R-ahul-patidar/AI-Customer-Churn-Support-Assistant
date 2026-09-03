@@ -11,7 +11,7 @@ from app.config import settings
 from app.database import engine
 from app.models import customer  # noqa: F401 — ensures model is registered with Base
 from app.models.customer import Base
-from app.routers import customers
+from app.routers import analytics, customers
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -35,9 +35,10 @@ app = FastAPI(
     title="AI Customer Churn & Support Assistant",
     description=(
         "Backend API for customer churn analytics and AI-powered support. "
-        "Phase 1: Customer CRUD and data layer."
+        "Phase 2: Analytics endpoints — churn-by-plan, top spenders, "
+        "high-risk customers, and summary KPIs."
     ),
-    version="0.1.0",
+    version="0.2.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -58,9 +59,8 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 app.include_router(customers.router)
 
-# Phase 2 — analytics router (added in next phase)
-# from app.routers import analytics
-# app.include_router(analytics.router)
+# Phase 2 — analytics endpoints
+app.include_router(analytics.router)
 
 # Phase 3 — AI assistant router (added in next phase)
 # from app.routers import assistant
