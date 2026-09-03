@@ -104,9 +104,7 @@ Run the complete test suite:
 .\venv\Scripts\pytest.exe tests -v
 ```
 
-## Zero-Docker Deployment Guide
-
-Since Docker is not required, you can deploy using standard cloud runtime platforms:
+## Deployment Guide
 
 1. **Backend (Render / Railway / Koyeb)**:
    - Build Command: `pip install -r requirements.txt`
