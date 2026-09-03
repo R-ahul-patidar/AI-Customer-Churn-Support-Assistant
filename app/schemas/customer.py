@@ -65,7 +65,7 @@ class PaginatedCustomers(BaseModel):
     total: int
     page: int
     page_size: int
-    results: list[CustomerSummary]
+    results: list[CustomerResponse]
 
 
 # ---------------------------------------------------------------------------

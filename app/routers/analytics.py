@@ -35,6 +35,30 @@ DB = Annotated[Session, Depends(get_db)]
 
 
 # ---------------------------------------------------------------------------
+# GET /analytics (Consolidated Overview — Assessment Table)
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "",
+    summary="Consolidated Customer & Churn Analytics",
+    description="Returns a consolidated analytics payload matching Assessment endpoint: GET /analytics.",
+)
+def get_analytics(db: DB):
+    """Aggregated customer and churn analytics overview."""
+    logger.info("GET /analytics")
+    try:
+        return {
+            "summary": crud.get_summary_stats(db),
+            "churn_by_plan": crud.get_churn_rate_by_plan(db),
+            "avg_spend_by_plan": crud.get_avg_spend_by_plan(db),
+            "top_spenders": [CustomerResponse.model_validate(c) for c in crud.get_top_spenders(db, limit=5)],
+        }
+    except Exception as exc:
+        logger.exception("Error computing consolidated analytics")
+        raise HTTPException(status_code=500, detail="Failed to fetch analytics") from exc
+
+
+# ---------------------------------------------------------------------------
 # GET /analytics/summary
 # ---------------------------------------------------------------------------
 

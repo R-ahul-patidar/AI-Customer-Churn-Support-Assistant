@@ -93,3 +93,25 @@ class AvgSpendByPlanItem(BaseModel):
 class AvgSpendByPlanResponse(BaseModel):
     """Response envelope for GET /analytics/avg-spend-by-plan."""
     results: list[AvgSpendByPlanItem]
+
+
+# ---------------------------------------------------------------------------
+# POST /predict-churn (Rule-Based Churn Risk Scoring)
+# ---------------------------------------------------------------------------
+
+class PredictChurnRequest(BaseModel):
+    """Input parameters matching Assessment specification."""
+    age: int = Field(..., ge=18, le=100)
+    plan: PLAN_TYPES
+    monthly_spend: float = Field(..., ge=0)
+    tenure_months: int = Field(..., ge=0)
+    support_tickets: int = Field(..., ge=0)
+    last_login_days: int = Field(..., ge=0)
+    satisfaction_score: float = Field(..., ge=1.0, le=10.0)
+
+
+class PredictChurnResponse(BaseModel):
+    """Prediction output matching Assessment specification."""
+    churn_probability: float = Field(..., description="Estimated churn probability between 0.0 and 1.0")
+    risk: Literal["LOW", "MEDIUM", "HIGH"] = Field(..., description="Risk tier classification")
+    risk_factors: list[str] = Field(default_factory=list, description="Primary drivers contributing to this risk level")

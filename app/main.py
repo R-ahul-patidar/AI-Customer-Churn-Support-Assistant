@@ -11,7 +11,8 @@ from app.config import settings
 from app.database import engine
 from app.models import customer  # noqa: F401 — ensures model is registered with Base
 from app.models.customer import Base
-from app.routers import analytics, customers
+from app.routers import analytics, assistant, customers
+from app.schemas.analytics import PredictChurnRequest, PredictChurnResponse
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -35,10 +36,10 @@ app = FastAPI(
     title="AI Customer Churn & Support Assistant",
     description=(
         "Backend API for customer churn analytics and AI-powered support. "
-        "Phase 2: Analytics endpoints — churn-by-plan, top spenders, "
-        "high-risk customers, and summary KPIs."
+        "Phase 3: AI assistant (POST /ask) powered by LangChain SQL Agent + Google Gemini. "
+        "Ask any natural-language question about your customer data."
     ),
-    version="0.2.0",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -62,9 +63,65 @@ app.include_router(customers.router)
 # Phase 2 — analytics endpoints
 app.include_router(analytics.router)
 
-# Phase 3 — AI assistant router (added in next phase)
-# from app.routers import assistant
-# app.include_router(assistant.router)
+# Phase 3 — AI assistant (POST /ask)
+app.include_router(assistant.router)
+
+
+# ---------------------------------------------------------------------------
+# Assessment Endpoint: POST /predict-churn (Rule-Based Risk Scoring)
+# ---------------------------------------------------------------------------
+@app.post(
+    "/predict-churn",
+    response_model=PredictChurnResponse,
+    tags=["Prediction"],
+    summary="Predict customer churn probability and risk tier",
+    description=(
+        "Calculates churn probability and classifies risk as LOW, MEDIUM, or HIGH "
+        "using a deterministic multi-factor risk model matching assessment requirements."
+    ),
+)
+def predict_churn(payload: PredictChurnRequest):
+    factors = []
+    score = 0.15  # Base probability
+
+    if payload.satisfaction_score < 4.0:
+        score += 0.35
+        factors.append("Critically low satisfaction score (< 4.0)")
+    elif payload.satisfaction_score < 6.0:
+        score += 0.15
+        factors.append("Sub-optimal satisfaction score (< 6.0)")
+
+    if payload.support_tickets > 5:
+        score += 0.30
+        factors.append(f"High support ticket volume ({payload.support_tickets} tickets)")
+    elif payload.support_tickets > 3:
+        score += 0.15
+        factors.append(f"Elevated support tickets ({payload.support_tickets} tickets)")
+
+    if payload.last_login_days > 45:
+        score += 0.30
+        factors.append(f"Prolonged inactivity ({payload.last_login_days} days since last login)")
+    elif payload.last_login_days > 20:
+        score += 0.15
+        factors.append(f"Moderate inactivity ({payload.last_login_days} days)")
+
+    if payload.tenure_months < 3:
+        score += 0.10
+        factors.append("New account (< 3 months tenure)")
+
+    prob = min(max(round(score, 2), 0.05), 0.95)
+    if prob >= 0.60:
+        risk = "HIGH"
+    elif prob >= 0.30:
+        risk = "MEDIUM"
+    else:
+        risk = "LOW"
+
+    return PredictChurnResponse(
+        churn_probability=prob,
+        risk=risk,
+        risk_factors=factors,
+    )
 
 
 # ---------------------------------------------------------------------------
