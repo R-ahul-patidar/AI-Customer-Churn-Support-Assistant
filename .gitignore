@@ -40,7 +40,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# ML Models (Phase 4)
+# ML Models (Phase 4 artifacts)
 *.pkl
 *.joblib
-models/
+
