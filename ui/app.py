@@ -237,11 +237,15 @@ elif nav == "💬 AI Support Assistant":
         ask_btn = True
 
     if ask_btn and user_question:
-        with st.spinner("Analyzing customer database and generating insights with Gemini..."):
+        with st.status("⚡ Querying AI Assistant...", expanded=True) as status:
+            st.write("🔍 Inspecting customer database and generating insights...")
             status_code, response_data = query_ai_assistant(user_question)
+            if status_code == 200:
+                status.update(label="✅ Analysis Complete!", state="complete", expanded=False)
+            else:
+                status.update(label="❌ Analysis Failed", state="error", expanded=False)
 
         if status_code == 200:
-            st.success("Analysis Complete!")
             st.markdown("### 💡 AI Response")
             st.markdown(response_data.get("answer", "No answer provided."))
 

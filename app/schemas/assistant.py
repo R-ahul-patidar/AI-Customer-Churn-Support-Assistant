@@ -11,7 +11,7 @@ class AskRequest(BaseModel):
 
     question: str = Field(
         ...,
-        min_length=5,
+        min_length=0,
         max_length=1000,
         description="Natural language question about customer data.",
         examples=[
